@@ -20,6 +20,7 @@ typedef struct Cache {
 Cache *CacheCreate(int size, int associativity) {
     LookupTable *newTable;
     int index;
+    int totalIndices = size / associativity;
     Cache *newCache = calloc(1, sizeof(Cache));
 
     newCache->hits = 0;
@@ -29,7 +30,7 @@ Cache *CacheCreate(int size, int associativity) {
     newCache->table = newTable = calloc(1, sizeof(LookupTable));
     newTable->size = size;
     newTable->associativity = associativity;
-    newTable->addressTable = calloc(size, sizeof(int *));
+    newTable->addressTable = calloc(totalIndices, sizeof(int *));
 
     // Initialize table's addressTable
     for (index = 0; index < associativity; index++) {
@@ -39,13 +40,29 @@ Cache *CacheCreate(int size, int associativity) {
     return newCache;
 }
 
+// Returns 1 if hit, 0 if miss
+int CacheLookup(Cache *cache, int address) {
+    int index, associativeNdx;
+    LookupTable *lookup = cache->table;
 
-void mem_read(int *mp) {
+    for (index = 0; index < lookup->size; index++) {
+        for (associativeNdx = 0; associativeNdx < lookup->associativity; associativeNdx++) {
+            if (lookup->addressTable[index][associativeNdx] == address) {
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+void mem_read(int *mp, Cache *cache) {
     printf("Memory read from location %p\n", mp);
 
 }
 
-void mem_write(int *mp) {
+void mem_write(int *mp, Cache *cache) {
     printf("Memory write to location %p\n", mp);
 
 }
@@ -57,6 +74,14 @@ int main()
     int a[10][10], b[10][10], mult[10][10], r1, c1, r2, c2, i, j, k;
 
     int *mp1, *mp2, *mp3;
+
+    // Initialize caches
+    Cache *cache_16_1 = CacheCreate(16, 1);
+    Cache *cache_16_2 = CacheCreate(16, 2);
+    Cache *cache_16_4 = CacheCreate(16, 4);
+    Cache *cache_256_1 = CacheCreate(256, 1);
+    Cache *cache_256_2 = CacheCreate(256, 2);
+    Cache *cache_256_4 = CacheCreate(256, 4);
 
     printf("Size of pointer is: %d\n\n", sizeof(mp1));
 
