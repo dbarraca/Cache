@@ -3,6 +3,8 @@
 
 /*	Cache emulation - statistics generation */
 /*	Generated for CSC 315 Lab 5 */
+#define INDEX_MASK 0x
+
 typedef struct LookupTable {
     int size;
     int associativity;
@@ -14,6 +16,7 @@ typedef struct Cache {
     int misses;
     int reads;
     int writes;
+    int indices;
     LookupTable *table;
 } Cache;
 
@@ -27,6 +30,7 @@ Cache *CacheCreate(int size, int associativity) {
     newCache->misses = 0;
     newCache->reads = 0;
     newCache->writes = 0;
+    newCache->indices = totalIndices;
     newCache->table = newTable = calloc(1, sizeof(LookupTable));
     newTable->size = size;
     newTable->associativity = associativity;
@@ -42,14 +46,15 @@ Cache *CacheCreate(int size, int associativity) {
 
 // Returns 1 if hit, 0 if miss
 int CacheLookup(Cache *cache, int address) {
+    int indexMask = cache->indices << 2, tagMask = 0xFFFFFFFF << (2 + cache->indices);
     int index, associativeNdx;
     LookupTable *lookup = cache->table;
 
-    for (index = 0; index < lookup->size; index++) {
-        for (associativeNdx = 0; associativeNdx < lookup->associativity; associativeNdx++) {
-            if (lookup->addressTable[index][associativeNdx] == address) {
-                return 1;
-            }
+    for (associativeNdx = 0, index = address & indexMask; 
+        associativeNdx < lookup->associativity; 
+        associativeNdx++) {
+        if (lookup->addressTable[index][associativeNdx] & tagMask == address & tagMask) {
+            return 1;
         }
     }
 
@@ -58,8 +63,14 @@ int CacheLookup(Cache *cache, int address) {
 
 
 void mem_read(int *mp, Cache *cache) {
-    printf("Memory read from location %p\n", mp);
+    int indexMask = cache->indices << 2;
 
+    printf("Memory read from location %p\n", mp);
+    cache->reads++;
+
+    if (CacheLookup(cache, (int)mp)) {
+        cache->hits++;
+    }
 }
 
 void mem_write(int *mp, Cache *cache) {
