@@ -1,11 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 /*	Cache emulation - statistics generation */
 /*	Generated for CSC 315 Lab 5 */
 typedef struct LookupTable {
     int size;
     int associativity;
-    int addressTable[][2];
+    int **addressTable;
 } LookupTable;
 
 typedef struct Cache {
@@ -13,8 +14,30 @@ typedef struct Cache {
     int misses;
     int reads;
     int writes;
-    LookupTable table;
+    LookupTable *table;
 } Cache;
+
+Cache *CacheCreate(int size, int associativity) {
+    LookupTable *newTable;
+    int index;
+    Cache *newCache = calloc(1, sizeof(Cache));
+
+    newCache->hits = 0;
+    newCache->misses = 0;
+    newCache->reads = 0;
+    newCache->writes = 0;
+    newCache->table = newTable = calloc(1, sizeof(LookupTable));
+    newTable->size = size;
+    newTable->associativity = associativity;
+    newTable->addressTable = calloc(size, sizeof(int *));
+
+    // Initialize table's addressTable
+    for (index = 0; index < associativity; index++) {
+        newTable->addressTable[index] = calloc(1, sizeof(int));
+    }
+
+    return newCache;
+}
 
 
 void mem_read(int *mp) {
